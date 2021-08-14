@@ -1,33 +1,12 @@
 ## Extract Natural Impact
-from obspy.signal.invsim import paz_to_freq_resp
-import matplotlib.pyplot as plt
-import numpy as np
-import obspy
-import seaborn as sns
-from scipy import signal
-from scipy.signal import butter
-from scipy.signal import lfilter
-from scipy import fftpack
-from scipy.fftpack import fft
-from scipy.fftpack import ifft
-import matplotlib.colors as colors
-from matplotlib.mlab import bivariate_normal
-from scipy.optimize import curve_fit
 from obspy import read
 from obspy.core import UTCDateTime
-from obspy import read_inventory
-from obspy.signal.invsim import paz_to_freq_resp
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-import datetime
-import numpy as np
-from pandas import Series
-from pandas import DataFrame
+
 
 # Input parameters
 read_URL='http://darts.isas.jaxa.jp/pub/apollo/pse/p14s/pse.a14.1.71'
 read_URL2='http://darts.isas.jaxa.jp/pub/apollo/pse/p14s/pse.a14.1.72'
-starttime_NI1 = '1971-04-17T06:59:00' # 0min before  
+starttime_NI1 = '1971-04-17T06:59:00' # 5min before  
 endtime_NI1 = '1971-04-17T09:04:00'  # 120 min after event
 output_z="./S14/SMQ_LPZ.sac"
 output_x="./S14/SMQ_LPX.sac"
