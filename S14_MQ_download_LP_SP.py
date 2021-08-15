@@ -36,7 +36,7 @@ st_NI1_lpy.write(output_y, format="SAC")
 
 print("### SP ###")
 st_NI1_spz = st_NI1.select(id=ID_sp) #XA stands for "Apollo Data"
-st_NI1_spz  = st_NI1_spz.trim(starttime=UTCDateTime(starttime_NI1), endtime=UTCDateTime(endtime_NI1))
+st_NI1_spz = st_NI1_spz.trim(starttime=UTCDateTime(starttime_NI1), endtime=UTCDateTime(endtime_NI1))
 st_NI1_spz.write(output_sp, format="SAC")
 
 
