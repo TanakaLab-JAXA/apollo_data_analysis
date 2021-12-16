@@ -1,6 +1,8 @@
 import argparse
 import os
 import obspy
+from requests.exceptions import HTTPError
+from obspy.io.sac.util import SacIOError
 
 
 def download(dir_path, station):
@@ -14,11 +16,16 @@ def download(dir_path, station):
     url = 'http://darts.isas.jaxa.jp/pub/apollo/pse'
     for key in range(1, 13):
         for i in range(1, 293):
+            print(f'\n【{url}' + f'/p{station}s' + f'/pse.a{station}.{key}.{i}】')
             # Download
             try:
                 data = obspy.read(url + f'/p{station}s' + f'/pse.a{station}.{key}.{i}')
+                print('    Successfully downloaded')
             except FileNotFoundError:
-                print(f'FileNotFoundError: {url}' + f'/p{station}s' + f'/pse.a{station}.{key}.{i}')
+                print('    FileNotFoundError')
+                continue
+            except HTTPError:
+                print('    HTTPError')
                 continue
 
             lpx = data.select(id=f'XA.S{station}..LPX')
@@ -26,21 +33,47 @@ def download(dir_path, station):
             lpz = data.select(id=f'XA.S{station}..LPZ')
             spz = data.select(id=f'XA.S{station}..SPZ')
 
-            path = make_dir_path(dir_path + '/apollo/pse' + f'/p{station}s' + f'/pse.a{station}.{key}.{i}')
-            if lpx != None:
-                lpx.merge(method=1, fill_value='interpolate')
-                lpx.write(path + '/LPX.sac', format='SAC')
-            if lpy != None:
-                lpy.merge(method=1, fill_value='interpolate')
-                lpy.write(path + '/LPY.sac', format='SAC')
-            if lpz != None:
-                lpz.merge(method=1, fill_value='interpolate')
-                lpz.write(path + '/LPZ.sac', format='SAC')
-            if spz != None:
-                spz.merge(method=1, fill_value='interpolate')
-                spz.write(path + '/SPZ.sac', format='SAC')
+            # Free memory
+            del data
 
-            print(f'Successfully downloaded and writed: {path}')
+            path = make_dir_path(dir_path + '/apollo/pse' + f'/p{station}s' + f'/pse.a{station}.{key}.{i}')
+            try:
+                if lpx != None:
+                    lpx.merge(method=1, fill_value='interpolate')
+                    lpx.write(path + '/LPX.sac', format='SAC')
+                    print('    Successfully writed (LPX)')
+            except SacIOError:
+                print('    SacIOError (LPX)')
+                pass
+
+            try:
+                if lpy != None:
+                    lpy.merge(method=1, fill_value='interpolate')
+                    lpy.write(path + '/LPY.sac', format='SAC')
+                    print('    Successfully writed (LPY)')
+            except SacIOError:
+                print('    SacIOError (LPY)')
+                pass
+
+            try:
+                if lpz != None:
+                    lpz.merge(method=1, fill_value='interpolate')
+                    lpz.write(path + '/LPZ.sac', format='SAC')
+                    print('    Successfully writed (LPZ)')
+            except SacIOError:
+                print('    SacIOError (LPZ)')
+                pass
+
+            try:
+                if spz != None:
+                    spz.merge(method=1, fill_value='interpolate')
+                    spz.write(path + '/SPZ.sac', format='SAC')
+                    print('    Successfully writed (SPZ)')
+            except SacIOError:
+                print('    SacIOError (SPZ)')
+                pass
+
+            print('    Completed')
 
 
 def make_dirs(dir_path):
