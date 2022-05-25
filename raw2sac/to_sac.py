@@ -36,7 +36,7 @@ def write(read_path, write_path, station, key_range, i_range, spz_flg):
                 continue
 
             # make path to write
-            path = make_write_path(f'{write_path}/apollo/pse/{suffix}')
+            path = make_write_path(f'{write_path}/apollo/pse{suffix}')
 
             # write only LP data
             if not spz_flg:
