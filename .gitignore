@@ -5,3 +5,7 @@ dataset/
 .ipynb_checkpoints
 
 *.pyc
+
+*.png
+
+*/plots/
