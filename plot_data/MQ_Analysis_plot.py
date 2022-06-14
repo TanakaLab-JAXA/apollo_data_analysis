@@ -6,17 +6,19 @@ import warnings
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.colors as colors
 from scipy import signal
 
 import obspy
 from obspy.core import UTCDateTime
 
+from configure import *
+
 # Setteings
 warnings.simplefilter('ignore')
-plt.rcParams['figure.figsize'] = (24, 4)
 
 
-class MQ_Analysis_plot:
+class MQ_Analysis:
     '''
     月震の解析用クラス
     
@@ -31,7 +33,7 @@ class MQ_Analysis_plot:
         lpz_du (Stream): LP-Z DU DATA
         spz_du (Stream): SP-Z DU DATA
     '''
-    def __init__(self, station):
+    def __init__(self, station, is_widget=False):
         '''
         Initialization
         
@@ -39,6 +41,7 @@ class MQ_Analysis_plot:
             input_station: ステーション番号
         '''
         self.station = station
+        self.x_figsize = 8 if is_widget else 24
         self.lpx = None
         self.lpy = None
         self.lpz = None
@@ -47,15 +50,11 @@ class MQ_Analysis_plot:
         self.lpy_du = None
         self.lpz_du = None
         self.spz_du = None
-        self.lpx_cf_score = []
-        self.lpy_cf_score = []
-        self.lpz_cf_score = []
-        self.spz_cf_score = []
 
 
     def init_data(self):
         '''
-        Convert main data to DU data
+        全てのデータをDU値に戻す
         '''
         self.lpx = deepcopy(self.lpx_du)
         self.lpy = deepcopy(self.lpy_du)
@@ -117,6 +116,61 @@ class MQ_Analysis_plot:
         self.lpz_du = deepcopy(self.lpz)
         self.spz_du = deepcopy(self.spz)
 
+    
+    def to_sac(self, path):
+        '''
+        SACファイルに出力
+        
+        Args:
+            path (str): SACファイルの出力先のパス (例: ./dataset/710417)
+        '''
+        # ステーション番号のディレクトリを作成
+        dir_path = path + '/S' + str(self.station)
+        os.makedirs(dir_path, exist_ok=True)
+        
+        # SACファイルの出力
+        if self.lpx != None:
+            self.lpx.write(dir_path + '/SMQ_LPX.sac', format='SAC')
+        if self.lpy != None:
+            self.lpy.write(dir_path + '/SMQ_LPY.sac', format='SAC')
+        if self.lpz != None:
+            self.lpz.write(dir_path + '/SMQ_LPZ.sac', format='SAC')
+        if self.spz != None:
+            self.spz.write(dir_path + '/SMQ_SPZ.sac', format='SAC')
+
+
+    def plot_du(self, channel='ALL', save=False, path=''):
+        '''
+        DU値の描画
+
+        Args:
+            channel (str): 前処理を行うデータのチャンネル -> {'ALL', 'LPX', 'LPY', 'LPZ', 'SPZ'}
+            save (bool): 保存するかどうか
+            path (str): 保存する場合のPATH
+        '''
+        if channel == 'ALL':
+            # ALLオプションで全チャンネルに対して前処理を行う
+            channels = ['LPX', 'LPY', 'LPZ', 'SPZ']
+        else:
+            channels = [channel]
+            
+        for ch in channels:
+            # メンバ変数をコピー
+            if ch == 'LPX': data_du = self.lpx_du
+            elif ch == 'LPY': data_du = self.lpy_du
+            elif ch == 'LPZ': data_du = self.lpz_du
+            elif ch == 'SPZ': data_du = self.spz_du
+            else: assert False
+
+            if data_du is None: continue
+
+            if save:
+                os.makedirs(path, exist_ok=True)
+                data_du.plot(outfile=f'{path}/{ch}.png')
+            else:
+                data_du.plot()
+                plt.show()
+
 
     def trim(
         self,
@@ -165,6 +219,57 @@ class MQ_Analysis_plot:
                 else: assert False
         
                 data[0].data = data[0].data[index]
+    
+        
+    def preprocessing(self, channel = 'ALL'):
+        '''
+        DU値から物理量に変換
+
+        Args:
+            channel (str): 前処理を行うデータのチャンネル -> {'ALL', 'LPX', 'LPY', 'LPZ', 'SPZ'}
+        '''
+        if channel == 'ALL':
+            # ALLオプションで全チャンネルに対して前処理を行う
+            channels = ['LPX', 'LPY', 'LPZ', 'SPZ']
+        else:
+            channels = [channel]
+            
+        for ch in channels:
+            # メンバ変数をコピー
+            if ch == 'LPX': data = self.lpx
+            elif ch == 'LPY': data = self.lpy
+            elif ch == 'LPZ': data = self.lpz
+            elif ch == 'SPZ': data = self.spz
+            else: assert False
+
+            if data is None: continue
+            
+            # 前処理
+            if ch != 'SPZ':
+                data.detrend(type='linear') # detrend
+                data.detrend('demean') # demean
+                data.taper(0.05, type='cosine')
+                data.filter('lowpass', freq=pre_high_freq, zerophase=True)
+                data.filter('highpass', freq=pre_low_freq, zerophase=True)
+                data.simulate(paz_remove=paz_AP) # Remove response
+                data.taper(0.05, type='cosine')
+                data.differentiate(method='gradient')
+                
+                data.filter('lowpass', freq=post_high_freq, zerophase=True)
+                data.filter('highpass', freq=post_low_freq, zerophase=True)
+
+            elif ch == 'SPZ':
+                data.detrend(type='linear') # detrend
+                data.detrend('demean') # demean
+                data.taper(0.05, type='cosine')
+                data.filter('lowpass', freq=pre_high_freq_sp, zerophase=True)
+                data.filter('highpass', freq=pre_low_freq_sp, zerophase=True)
+                data.simulate(paz_remove=paz_SP) # Remove response
+                data.taper(0.05, type='cosine')
+                data.differentiate(method='gradient')
+                
+                data.filter('lowpass', freq=post_high_freq_sp, zerophase=True)
+                data.filter('highpass', freq=post_low_freq_sp, zerophase=True)
 
 
     def remove_noise(
@@ -227,7 +332,7 @@ class MQ_Analysis_plot:
             n_plots = 5 + times
 
             if verbose >= 1:
-                fig = plt.figure(figsize=(24, 4*n_plots))
+                fig = plt.figure(figsize=(self.x_figsize, 4*n_plots))
                 title = 'Waveform (DU)'
                 plotting(fig, d, [n_plots, 1, 1], title, color='black')
 
@@ -304,7 +409,15 @@ class MQ_Analysis_plot:
             data[0].data = d
 
 
-    def comparison_with_du(self, channel='ALL', save=False, path=''):
+    def plot_comparison_with_du(self, channel='ALL', save=False, path=''):
+        '''
+        DU値と前処理後のデータを比較
+
+        Args:
+            channel (str): 前処理を行うデータのチャンネル -> {'ALL', 'LPX', 'LPY', 'LPZ', 'SPZ'}
+            save (bool): 保存するかどうか
+            path (str): 保存する場合のPATH
+        '''
         if channel == 'ALL':
             # ALLオプションで全チャンネルに対して前処理を行う
             channels = ['LPX', 'LPY', 'LPZ', 'SPZ']
@@ -330,7 +443,7 @@ class MQ_Analysis_plot:
             if data is None: continue
 
             # init
-            fig = plt.figure(figsize=(24, 8))
+            fig = plt.figure(figsize=(self.x_figsize, 8))
             datetimes = np.array(list(map(str, data[0].times('utcdatetime'))))
             n_data = len(datetimes)
             ticks = [0, 1*n_data//4, 2*n_data//4, 3*n_data//4, n_data-1]
@@ -339,16 +452,121 @@ class MQ_Analysis_plot:
             ax = fig.add_subplot(2, 1, 1)
             ax.plot(data_du[0].data, color='black')
             ax.set_title('Waveform (DU)')
+            ax.set_xticks(ticks, datetimes[ticks])
+            ax.set_xlabel('Datetime (UTC)')
+            ax.set_ylabel('$nm/s$')
             ax.grid()
-            plt.xticks(ticks, datetimes[ticks])
 
             # # plot preprocessed data
             ax = fig.add_subplot(2, 1, 2)
             ax.plot(data[0].data, color='black')
             ax.set_title('Waveform (Preprocessed)')
+            ax.set_xticks(ticks, datetimes[ticks])
+            ax.set_xlabel('Datetime (UTC)')
+            ax.set_ylabel('$nm/s$')
             ax.grid()
-            plt.xticks(ticks, datetimes[ticks])
-            plt.subplots_adjust(hspace=0.3)
+
+            plt.subplots_adjust(hspace=0.4)
+
+            if save:
+                os.makedirs(path, exist_ok=True)
+                plt.savefig(f'{path}/{ch}.png')
+            else:
+                plt.show()
+
+
+    def plot_spectrogram(self, channel = 'ALL', save=False, path=''):
+        '''
+        スペクトログラムの描画
+
+        Args:
+            channel (str): 前処理を行うデータのチャンネル -> {'ALL', 'LPX', 'LPY', 'LPZ', 'SPZ'}
+            save (bool): 保存するかどうか
+            path (str): 保存する場合のPATH
+        '''
+        if channel == 'ALL':
+            # ALLオプションで全チャンネルに対して前処理を行う
+            channels = ['LPX', 'LPY', 'LPZ', 'SPZ']
+        else:
+            channels = [channel]
+            
+        for ch in channels:
+            # メンバ変数をコピー
+            if ch == 'LPX': data, data_du = self.lpx, self.lpx_du
+            elif ch == 'LPY': data, data_du = self.lpy, self.lpy_du
+            elif ch == 'LPZ': data, data_du = self.lpz, self.lpz_du
+            elif ch == 'SPZ': data, data_du = self.spz, self.spz_du
+            else: assert False
+
+            if data is None: continue
+
+            # Init figure
+            fig = plt.figure(figsize=(self.x_figsize, 10))
+            plt.gca().spines['right'].set_visible(False)
+            plt.gca().spines['top'].set_visible(False)
+            plt.gca().spines['bottom'].set_visible(False)
+            plt.gca().spines['left'].set_visible(False)
+            plt.axis('off')
+            datetimes = np.array(list(map(str, data[0].times('utcdatetime'))))
+            n_data = len(datetimes)
+            ticks = [0, 1*n_data//4, 2*n_data//4, 3*n_data//4, n_data-1]
+
+            # Plot Waveform
+            ax = fig.add_subplot(2, 1, 1)
+            ax.plot(data[0].data)
+            ax.set_xticks([])
+            ax.set_xmargin(0)
+            ax.set_title('Waveform')
+            ax.set_ylabel('$nm/s$')
+            ax.grid()
+
+            # Plot Spectrogram
+            ax = fig.add_subplot(2, 1, 2)
+
+            # Low Freq
+            if ch != 'SPZ':
+                f, t, sxx = signal.spectrogram(
+                    data[0].data * 1e9,
+                    nfft=int(f_lp * times),
+                    nperseg=int(f_lp * times),
+                    fs=int(f_lp),
+                    noverlap=int(f_lp * times / 2),
+                    scaling='density',
+                    mode='psd',
+                    window=('hamming')
+                )
+                plt.pcolormesh(t, f, np.sqrt(sxx), cmap=cmap, norm=colors.LogNorm(vmin=psd_min, vmax=psd_max/2))
+                ax.set_ylim(0.1, 3)
+                ax.set_yticks([0.1,0.5, 1.0, 2.0])
+                plt.title('Spectrogram (Low Freq)')
+
+            # High Freq
+            if ch == 'SPZ':
+                f, t, sxx = signal.spectrogram(
+                    data[0].data * 1e9,
+                    nfft=int(f_sp * times),
+                    nperseg=int(f_sp * times),
+                    fs=int(f_sp),
+                    noverlap=int(f_sp * times / 2),
+                    scaling='density',
+                    mode='psd',
+                    window=('hamming')
+                )
+                plt.pcolormesh(t, f, np.sqrt(sxx), cmap=cmap, norm=colors.LogNorm(vmin=psd_min, vmax=psd_max/2))
+                ax.set_ylim(1, 26)
+                ax.set_yticks([0.1,0.5, 1.0, 5.0, 10, 20])
+                plt.title('Spectrogram (High Freq)')
+
+            # Other settings
+            t_len = len(t)
+            t_ticks = [0, 1*t_len//4, 2*t_len//4, 3*t_len//4, t_len-1]
+            ax.set_xticks(t[t_ticks], datetimes[ticks])
+            ax.set_xlabel('Datetime (UTC)')
+            ax.set_ylabel('Frequency (Hz)')
+            ax.set_yscale('log')
+            plt.colorbar(orientation ='horizontal', label='PSD ($nm/s/√Hz$)', aspect=80)
+            plt.grid(which='major')
+            plt.subplots_adjust(hspace=0.1)
 
             if save:
                 os.makedirs(path, exist_ok=True)
