@@ -452,7 +452,7 @@ class MQ_Analysis:
             ax = fig.add_subplot(2, 1, 1)
             ax.plot(data_du[0].data, color='black')
             ax.set_title('Waveform (DU)')
-            ax.set_xticks(ticks, datetimes[ticks])
+            plt.xticks(ticks, datetimes[ticks])
             ax.set_xlabel('Datetime (UTC)')
             ax.set_ylabel('$nm/s$')
             ax.grid()
@@ -461,7 +461,7 @@ class MQ_Analysis:
             ax = fig.add_subplot(2, 1, 2)
             ax.plot(data[0].data, color='black')
             ax.set_title('Waveform (Preprocessed)')
-            ax.set_xticks(ticks, datetimes[ticks])
+            plt.xticks(ticks, datetimes[ticks])
             ax.set_xlabel('Datetime (UTC)')
             ax.set_ylabel('$nm/s$')
             ax.grid()
@@ -560,7 +560,7 @@ class MQ_Analysis:
             # Other settings
             t_len = len(t)
             t_ticks = [0, 1*t_len//4, 2*t_len//4, 3*t_len//4, t_len-1]
-            ax.set_xticks(t[t_ticks], datetimes[ticks])
+            plt.xticks(t[t_ticks], datetimes[ticks])
             ax.set_xlabel('Datetime (UTC)')
             ax.set_ylabel('Frequency (Hz)')
             ax.set_yscale('log')

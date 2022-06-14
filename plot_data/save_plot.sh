@@ -65,7 +65,7 @@ python save_plot.py 16 /media/imagawa/HD-PCFSU3-A/SAC/apollo/pse/p16s/pse.a16.06
 python save_plot.py 16 /media/imagawa/HD-PCFSU3-A/SAC/apollo/pse/p16s/pse.a16.06.112 --detail
 python save_plot.py 16 /media/imagawa/HD-PCFSU3-A/SAC/apollo/pse/p16s/pse.a16.06.143 --detail
 python save_plot.py 16 /media/imagawa/HD-PCFSU3-A/SAC/apollo/pse/p16s/pse.a16.07.052 --detail
-python save_plot.py 16 /media/imagawa/HD-PCFSU3-A/SAC/apollo/pse/p16s/pse.a16.07.072 --detail
-python save_plot.py 16 /media/imagawa/HD-PCFSU3-A/SAC/apollo/pse/p16s/pse.a16.08.064 --detail
-python save_plot.py 16 /media/imagawa/HD-PCFSU3-A/SAC/apollo/pse/p16s/pse.a16.08.119 --detail
-python save_plot.py 16 /media/imagawa/HD-PCFSU3-A/SAC/apollo/pse/p16s/pse.a16.08.127 --detail
+python save_plot.py 16 /media/imagawa/BACKUP/SAC/apollo/pse/p16s/pse.a16.07.072 --detail
+python save_plot.py 16 /media/imagawa/BACKUP/SAC/apollo/pse/p16s/pse.a16.08.064 --detail
+python save_plot.py 16 /media/imagawa/BACKUP/SAC/apollo/pse/p16s/pse.a16.08.119 --detail
+python save_plot.py 16 /media/imagawa/BACKUP/SAC/apollo/pse/p16s/pse.a16.08.127 --detail
