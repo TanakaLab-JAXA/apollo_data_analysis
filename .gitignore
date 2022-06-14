@@ -1,11 +1,13 @@
 dataset/
 
-.DS_Store
+.ipynb_checkpoints/
 
-.ipynb_checkpoints
+*/plots/
+
+.DS_Store
 
 *.pyc
 
 *.png
 
-*/plots/
+*.pickle
