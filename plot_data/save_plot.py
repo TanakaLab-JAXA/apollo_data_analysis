@@ -4,29 +4,60 @@ import pickle
 from glob import glob
 from sqlite3 import Time
 from time import time
-from MQ_Analysis_plot import MQ_Analysis_plot
+from MQ_Analysis_plot import MQ_Analysis
 from timeout_decorator import timeout, TimeoutError
 
-@timeout(500)
+timeout_threshold = 1000 # sec
+
+
+@timeout(timeout_threshold)
 def save_plot(station, read_path):
     path = read_path
-    smq = MQ_Analysis_plot(station=station)
+    dir_name = 'plots_2022-06-14'
+
+    smq = MQ_Analysis(station=station)
     smq.read_sac(path)
-    smq.remove_noise(method='envelope', times=10)
-    smq.comparison_with_du(
+
+    # DU
+    smq.plot_du(
         save=True,
-        path=f'./HFT_plots/envelope/p{smq.station}s/' + path.split('/')[-1]
-    )
-    smq.init_data()
-    smq.remove_noise(method='ewm', times=10)
-    smq.comparison_with_du(
-        save=True,
-        path=f'./HFT_plots/ewm/p{smq.station}s/' + path.split('/')[-1]
+        path=f'./{dir_name}/DU/p{smq.station}s/' + path.split('/')[-1],
     )
 
-    os.makedirs(f'./HFT_plots/pickle/p{smq.station}s/', exist_ok=True)
-    with open(f'./HFT_plots/pickle/p{smq.station}s/' + path.split('/')[-1] + '.pickle', 'wb') as p:
-        pickle.dump(smq, p)
+    # Envelope
+    smq.remove_noise('SPZ', method='envelope', times=10)
+    smq.plot_comparison_with_du(
+        'SPZ',
+        save=True,
+        path=f'./{dir_name}/envelope/comparison/p{smq.station}s/' + path.split('/')[-1],
+    )
+    smq.preprocessing('SPZ')
+    smq.plot_spectrogram(
+        'SPZ',
+        save=True,
+        path=f'./{dir_name}/envelope/spectrogram/p{smq.station}s/' + path.split('/')[-1],
+    )
+    os.makedirs(f'./{dir_name}/envelope/pickle/p{smq.station}s/', exist_ok=True)
+    with open(f'./{dir_name}/envelope/pickle/p{smq.station}s/' + path.split('/')[-1] + '.pickle', 'wb') as p:
+        pickle.dump(smq, p) # Save a pickle file
+
+    # EWM
+    smq.init_data()
+    smq.remove_noise('SPZ', method='ewm', times=10)
+    smq.plot_comparison_with_du(
+        'SPZ',
+        save=True,
+        path=f'./{dir_name}/ewm/comparison/p{smq.station}s/' + path.split('/')[-1],
+    )
+    smq.preprocessing('SPZ')
+    smq.plot_spectrogram(
+        'SPZ',
+        save=True,
+        path=f'./{dir_name}/ewm/spectrogram/p{smq.station}s/' + path.split('/')[-1],
+    )
+    os.makedirs(f'./{dir_name}/ewm/pickle/p{smq.station}s/', exist_ok=True)
+    with open(f'./{dir_name}/ewm/pickle/p{smq.station}s/' + path.split('/')[-1] + '.pickle', 'wb') as p:
+        pickle.dump(smq, p) # Save a pickle file
 
     del smq
 
@@ -42,41 +73,15 @@ if __name__ == '__main__':
 
     if args.detail:
         try:
-            print('=' * 10)
+            print('\n' + '=' * 10)
             print(f'start {args.read_path}')
             start = time()
 
             save_plot(station=args.station, read_path=args.read_path)
 
             print(f'saved (elapsed time: {time() - start} sec)')
-            print('=' * 10)
-            print()
 
         except TimeoutError:
             print(f'TimeoutError: {args.read_path}')
             with open('./timeout_error.txt', 'a') as f:
                 print(f'TimeoutError: {args.read_path}', file=f)
-
-    else:
-        directories = glob(f'{args.read_path}/*')
-        for i, dir in enumerate(directories):
-            try:
-                print('=' * 10)
-                print(f'start {dir}')
-                start = time()
-
-                save_plot(station=args.station, read_path=dir)
-
-                print(f'saved (elapsed time: {time() - start} sec)')
-                print('=' * 10)
-                print()
-
-            except TimeoutError:
-                print(f'TimeoutError: {dir}')
-                with open('./timeout_error.txt', 'a') as f:
-                    print(f'TimeoutError: {dir}', file=f)
-
-            if i >= args.n_saves:
-                break
-        
-
