@@ -208,6 +208,7 @@ class MQ_Analysis:
             end_utcdatetime = UTCDateTime(*end)
             times = data[0].times('utcdatetime')
             index = (times >= start_utcdatetime) & (times <= end_utcdatetime)
+            
             data[0].data = data[0].data[index]
 
             if with_du:
