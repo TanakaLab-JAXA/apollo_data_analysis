@@ -12,6 +12,10 @@ unused/
 
 *.pickle
 
+*.pkl
+
 *.zip
+
+*.sac
 
 .DS_Store
