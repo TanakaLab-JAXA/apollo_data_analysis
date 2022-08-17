@@ -93,23 +93,22 @@ class MQData:
         self.lpz_du = deepcopy(self.lpz)
         self.spz_du = deepcopy(self.spz)
 
-    def to_sac(self, path, station_number):
+    def to_sac(self, path):
         """
         output sac files
 
         Args:
             path (str): output path (例: ./dataset/710417)
         """
-        # make a directory of the station
-        dir_path = path + "/S" + str(station_number)
-        os.makedirs(dir_path, exist_ok=True)
+        # make a directories
+        os.makedirs(path, exist_ok=True)
 
         # output SAC files
         if self.lpx != None:
-            self.lpx.write(dir_path + "/LPX.sac", format="SAC")
+            self.lpx.write(path + "/LPX.sac", format="SAC")
         if self.lpy != None:
-            self.lpy.write(dir_path + "/LPY.sac", format="SAC")
+            self.lpy.write(path + "/LPY.sac", format="SAC")
         if self.lpz != None:
-            self.lpz.write(dir_path + "/LPZ.sac", format="SAC")
+            self.lpz.write(path + "/LPZ.sac", format="SAC")
         if self.spz != None:
-            self.spz.write(dir_path + "/SPZ.sac", format="SAC")
+            self.spz.write(path + "/SPZ.sac", format="SAC")

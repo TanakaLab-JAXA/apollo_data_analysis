@@ -252,9 +252,9 @@ def culc_sta_lta(
     S_RATE = 53.0 if is_sp else 6.6  # Sampling rate
     data = pd.Series(input_data).abs()
 
-    tl = S_RATE * 150
-    ts = S_RATE * 50
-    lag = S_RATE * 56
+    tl = round(S_RATE * 150)
+    ts = round(S_RATE * 50)
+    lag = round(S_RATE * 56)
     if fc:
         if n:
             tl = round(S_RATE * (1 / fc) * n)
@@ -271,6 +271,7 @@ def culc_sta_lta(
 
     sta, lta = np.array(sta), np.array(lta)
     result = sta / lta
+    result = result * signal.cosine(len(result))
 
     if verbose > 0:
         fig, ax1 = plt.subplots(figsize=(8 if is_widget else 24, 4))
