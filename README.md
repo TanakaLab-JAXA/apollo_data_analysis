@@ -16,4 +16,4 @@ $ conda install pandas
 
 ## Usage
 
-Read sample.ipynb
+Read [sample.ipynb](https://github.com/TanakaLab-JAXA/apollo_data_analysis/blob/imagawa/sample.ipynb)
