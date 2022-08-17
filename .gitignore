@@ -1,10 +1,10 @@
-dataset/
-
 .ipynb_checkpoints/
 
-*/plots/
+dataset/
 
-.DS_Store
+unused/
+
+*/plots/
 
 *.pyc
 
@@ -13,3 +13,5 @@ dataset/
 *.pickle
 
 *.zip
+
+.DS_Store

@@ -1,3 +1,0 @@
-NotImplementedError: /media/imagawa/BACKUP/RAW/apollo/pse/p12s/pse.a12.4.29
-NotImplementedError: /media/imagawa/BACKUP/RAW/apollo/pse/p12s/pse.a12.7.59
-NotImplementedError: /media/imagawa/BACKUP/RAW/apollo/pse/p12s/pse.a12.7.94
