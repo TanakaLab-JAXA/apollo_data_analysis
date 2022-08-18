@@ -299,17 +299,19 @@ def culc_sta_lta(
 def culc_peak_run_length(
     slta,
     threshold,
+    run_length_th=None,
     verbose=0,
     signal=None,
     is_widget=False,
     title=None,
 ):
     """
-    calculate full width half maximum
+    calculate run length
 
     Args:
         slta (ndarray): sta/lta
         threshold (float): threshold of sta/lta
+        run_length_th (float): threshold of run length
         verbose (int): set >0 if visualize
         signal (ndarray): plot signal
         is_widget (bool): use widget if True
@@ -317,6 +319,25 @@ def culc_peak_run_length(
     """
     comp_sec, lengths = _culc_run_length(slta >= threshold)
     run_length = lengths[comp_sec]
+
+    start_args = np.array(
+        [
+            np.where(slta >= threshold)[0][np.sum(run_length[:i])]
+            for i in range(len(run_length))
+        ]
+    )
+    end_args = np.array(
+        [
+            np.where(slta >= threshold)[0][np.sum(run_length[: i + 1]) - 1]
+            for i in range(len(run_length))
+        ]
+    )
+
+    if run_length_th is not None:
+        target_args = run_length >= run_length_th
+        run_length = run_length[target_args]
+        start_args = start_args[target_args]
+        end_args = end_args[target_args]
 
     if verbose > 0:
         print(run_length)
@@ -326,23 +347,23 @@ def culc_peak_run_length(
         slta_th = deepcopy(slta)
         slta_th[slta < threshold] = None
 
-        ax1.set_ylabel("STA/LTA", color="red")
+        ax1.set_ylabel("STA/LTA", color="blue")
         ax1.plot(slta, color="blue")
         ax1.plot(slta_th, color="red")
         ax1.plot(np.repeat(threshold, len(slta)), color="#32CD32")
-        ax1.tick_params(axis="y", labelcolor="red")
-        ax1.set_ylim(-5, 100)
+        ax1.tick_params(axis="y", labelcolor="blue")
 
-        ax2 = ax1.twinx()
-        ax2.set_ylabel("nm/s", color="black")
-        ax2.plot(pd.Series(signal[-len(slta) :]).abs(), color="black", alpha=0.1)
+        if signal is not None:
+            ax2 = ax1.twinx()
+            ax2.set_ylabel("nm/s", color="black")
+            ax2.plot(pd.Series(signal[-len(slta) :]).abs(), color="black", alpha=0.2)
 
         fig.tight_layout()
         if title:
             plt.title(title)
         plt.show()
 
-    return run_length
+    return run_length, start_args, end_args
 
 
 def _detrend_rolling(data, window, step=1):
