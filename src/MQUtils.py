@@ -6,7 +6,7 @@ import pandas as pd
 from obspy.core import UTCDateTime
 from scipy import signal
 
-from configure import *
+from src.configure import *
 
 from .utils import _get_datetime_ticks
 

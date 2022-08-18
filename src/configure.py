@@ -116,4 +116,3 @@ SP_Ds = 10115553420.896257  # Sensitivity
 paz_AF = {"poles": AF_poles, "zeros": AF_zeros, "gain": AF_A0, "sensitivity": AF_Ds}
 paz_AP = {"poles": AP_poles, "zeros": AP_zeros, "gain": AP_A0, "sensitivity": AP_Ds}
 paz_SP = {"poles": SP_poles, "zeros": SP_zeros, "gain": SP_A0, "sensitivity": SP_Ds}
-ß

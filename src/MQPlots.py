@@ -7,7 +7,7 @@ import numpy as np
 from matplotlib.ticker import ScalarFormatter
 from scipy import signal
 
-from configure import *
+from src.configure import *
 
 from .utils import _get_datetime_ticks
 
