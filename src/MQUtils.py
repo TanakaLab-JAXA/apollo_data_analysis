@@ -55,6 +55,8 @@ def trim(
         data[0].data = data[0].data[index]
         data_du[0].data = data_du[0].data[index]
 
+        data[0].stats.starttime = starttime_after
+
 
 def du2phys(mq, channel="ALL", lower_th=None, upper_th=None):
     """
@@ -227,7 +229,7 @@ def remove_noise(
 def culc_sta_lta(
     input_data,
     is_sp=True,
-    fc=None,
+    fc=1.0,
     n=None,
     m=None,
     l=None,
@@ -241,7 +243,7 @@ def culc_sta_lta(
     Args:
         input_data (ndarray): Signal
         is_sp (bool): SP Data?
-        fc (float): 1 or center frequency
+        fc (float): 1.0 or center frequency
         n (float): parameter of tl
         m (float): parameter of ts
         l (float): parameter of lag
@@ -252,16 +254,9 @@ def culc_sta_lta(
     S_RATE = 53.0 if is_sp else 6.6  # Sampling rate
     data = pd.Series(input_data).abs()
 
-    tl = round(S_RATE * 150)
-    ts = round(S_RATE * 50)
-    lag = round(S_RATE * 56)
-    if fc:
-        if n:
-            tl = round(S_RATE * (1 / fc) * n)
-        if m:
-            ts = round(S_RATE * (1 / fc) * m)
-        if l:
-            lag = round(S_RATE * (1 / fc) * l)
+    tl = round(S_RATE * (1 / fc) * n) if n else round(S_RATE * 150)
+    ts = round(S_RATE * (1 / fc) * m) if m else round(S_RATE * 50)
+    lag = round(S_RATE * (1 / fc) * l) if l else round(S_RATE * 56)
 
     sta, lta = data.rolling(ts).mean(), data.rolling(tl).mean()
     sta, lta = sta[~pd.isnull(sta)], lta[~pd.isnull(lta)]
