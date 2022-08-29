@@ -21,6 +21,7 @@ def trim(
     trimming
 
     Args:
+        mq (MQData): Moonquake Data
         start (list[int]): start time ([year, month, day, hour, minute, second, microsecond])
         end (list[int]): end time ([year, month, day, hour, minute, second, microsecond])
         channel (str): {'ALL', 'LPX', 'LPY', 'LPZ', 'SPZ'}
@@ -63,7 +64,10 @@ def du2phys(mq, channel="ALL", lower_th=None, upper_th=None):
     convert DU into physical quantity
 
     Args:
+        mq (MQData): Moonquake Data
         channel (str): {'ALL', 'LPX', 'LPY', 'LPZ', 'SPZ'}
+        lower_th (float): threshold of high pass filter
+        upper_th (float): threshold of low pass filter
     """
     if channel == "ALL":
         channels = ["LPX", "LPY", "LPZ", "SPZ"]
@@ -124,6 +128,7 @@ def remove_noise(
     remove noise
 
     Args:
+        mq (MQData): Moonquake Data
         channel (str): {'ALL', 'LPX', 'LPY', 'LPZ', 'SPZ'}
         method (str): {'envelope', 'ewm'}
         times (int): times of approve the method
@@ -241,7 +246,7 @@ def culc_sta_lta(
     calculate sta/lta
 
     Args:
-        mq (MQData): moonquake data
+        mq (MQData): Moonquake Data
         channel (str): {'LPX', 'LPY', 'LPZ', 'SPZ'}
         fc (float): 1.0 or center frequency
         n (float): parameter of tl

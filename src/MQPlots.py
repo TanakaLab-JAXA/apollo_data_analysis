@@ -64,6 +64,7 @@ def plot_comparison_with_du(
     Args:
         mq (MQData): Moonquake Data
         channel (str): {'ALL', 'LPX', 'LPY', 'LPZ', 'SPZ'}
+        is_du_detrend (bool): plot detrended DU data
         is_phys (bool): The current signal is physical quantity or not
         save (bool): save figures if True
         path (str): output path of figures if save
