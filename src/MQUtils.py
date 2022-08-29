@@ -227,8 +227,8 @@ def remove_noise(
 
 
 def culc_sta_lta(
-    input_data,
-    is_sp=True,
+    mq,
+    channel="SPZ",
     fc=1.0,
     n=None,
     m=None,
@@ -241,8 +241,8 @@ def culc_sta_lta(
     calculate sta/lta
 
     Args:
-        input_data (ndarray): Signal
-        is_sp (bool): SP Data?
+        mq (MQData): moonquake data
+        channel (str): {'LPX', 'LPY', 'LPZ', 'SPZ'}
         fc (float): 1.0 or center frequency
         n (float): parameter of tl
         m (float): parameter of ts
@@ -251,14 +251,27 @@ def culc_sta_lta(
         is_widget (bool): use widget if True
         title (str): figure title
     """
-    S_RATE = 53.0 if is_sp else 6.6  # Sampling rate
-    data = pd.Series(input_data).abs()
+    data = None
+    if channel == "LPX":
+        data = mq.lpx
+    elif channel == "LPY":
+        data = mq.lpy
+    elif channel == "LPZ":
+        data = mq.lpz
+    elif channel == "SPZ":
+        data = mq.spz
 
-    tl = round(S_RATE * (1 / fc) * n) if n else round(S_RATE * 150)
-    ts = round(S_RATE * (1 / fc) * m) if m else round(S_RATE * 50)
-    lag = round(S_RATE * (1 / fc) * l) if l else round(S_RATE * 56)
+    if data is None:
+        return
 
-    sta, lta = data.rolling(ts).mean(), data.rolling(tl).mean()
+    sampling_rate = data[0].stats.sampling_rate
+    d = pd.Series(data[0].data).abs()
+
+    tl = round(sampling_rate * (1 / fc) * n) if n else round(sampling_rate * 150)
+    ts = round(sampling_rate * (1 / fc) * m) if m else round(sampling_rate * 50)
+    lag = round(sampling_rate * (1 / fc) * l) if l else round(sampling_rate * 56)
+
+    sta, lta = d.rolling(ts).mean(), d.rolling(tl).mean()
     sta, lta = sta[~pd.isnull(sta)], lta[~pd.isnull(lta)]
 
     sta = sta[tl + lag :]
@@ -280,7 +293,7 @@ def culc_sta_lta(
         color = "black"
         ax2 = ax1.twinx()
         ax2.set_ylabel("m/s", color=color)
-        ax2.plot(data[tl + ts + lag :], color=color, alpha=0.3)
+        ax2.plot(d[tl + ts + lag :], color=color, alpha=0.3)
 
         fig.tight_layout()
         plt.xticks([])
