@@ -1,4 +1,5 @@
 from copy import deepcopy
+from pprint import pprint
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -316,7 +317,7 @@ def calc_peak_run_length(
     mq,
     channel="SPZ",
     slta=None,
-    threshold=5,
+    threshold=10,
     run_length_th=None,
     verbose=0,
     is_widget=False,
@@ -371,6 +372,8 @@ def calc_peak_run_length(
 
         x_figsize = 8 if is_widget else 24
         fig, ax1 = plt.subplots(figsize=(x_figsize, 8))
+
+        # plot STA/LTA
         slta_th = deepcopy(slta)
         slta_th[slta < threshold] = None
 
@@ -391,6 +394,7 @@ def calc_peak_run_length(
             data = mq.spz
 
         if data:
+            # plot signal
             ax2 = ax1.twinx()
             ax2.set_ylabel("nm/s", color="black")
             ax2.plot(
@@ -414,17 +418,37 @@ def calc_peak_run_length(
 def calc_fwhm(
     mq,
     channel="SPZ",
-    starts=[],
-    ends=[],
+    slta=None,
+    starts=np.array([]),
+    ends=np.array([]),
+    target_width_time=0,
     verbose=0,
     is_widget=False,
     title=None,
 ):
     """
     calculate full width half maximum
+
+    Args:
+        mq (MQData): Moonquake Data
+        channel (str): {'LPX', 'LPY', 'LPZ', 'SPZ'}
+        slta (ndarray): sta/lta
+        starts (ndarray): start args of peaks
+        ends (ndarray): end args of peaks
+        target_width_time (float): sec
+        verbose (int): set >0 if visualize
+        signal (ndarray): plot signal
+        is_widget (bool): use widget if True
+        title (str): figure title
+
+    Returns:
+        profiles (list[dict[str, Any]]): list of profile info
     """
     if len(starts) != len(ends):
         return
+
+    if slta is None:
+        slta = calc_sta_lta(mq=mq, channel=channel)
 
     data = None
     if channel == "LPX":
@@ -439,7 +463,83 @@ def calc_fwhm(
     if data is None:
         return
 
-    # TODO
+    r = round(data[0].stats.sampling_rate * target_width_time / 2)
+    profiles = []
+    for i, (start, end) in enumerate(zip(starts, ends)):
+        peak_argmax = start + np.argmax(slta[start : end + 1])
+        peak_max = np.max(slta[start : end + 1])
+        peak_min = np.min(slta[peak_argmax - r : peak_argmax + 1 + r])
+        half = (peak_max - peak_min) / 2
+
+        # calculate FWHM
+        for i, target in enumerate(slta[peak_argmax - r : peak_argmax][::-1]):
+            if target <= half:
+                break
+        start_fwhm = peak_argmax - i
+        for i, target in enumerate(slta[peak_argmax : peak_argmax + 1 + r]):
+            if target <= half:
+                break
+        end_fwhm = peak_argmax + i
+        fwhm = end_fwhm - start_fwhm + 1
+
+        profile = {
+            "id": i,
+            "argmax": peak_argmax,
+            "max": peak_max,
+            "min": peak_min,
+            "half": half,
+            "fwhm": fwhm,
+            "start_fwhm": start_fwhm,
+            "end_fwhm": end_fwhm,
+        }
+        profiles.append(profile)
+
+    if verbose > 0:
+        pprint(profiles)
+
+        x_figsize = 8 if is_widget else 24
+        fig, ax1 = plt.subplots(figsize=(x_figsize, 8))
+        ticks, datetime_ticks = _get_datetime_ticks(data)
+
+        # plot STA/LTA
+        ax1.set_ylabel("STA/LTA", color="blue")
+        ax1.plot(slta, color="blue")
+        ax1.tick_params(axis="y", labelcolor="blue")
+
+        # plot signal
+        ax2 = ax1.twinx()
+        ax2.set_ylabel("nm/s", color="black")
+        ax2.plot(pd.Series(data[0].data[-len(slta) :]).abs(), color="black", alpha=0.2)
+
+        ax1.vlines(
+            [profile["argmax"] for profile in profiles], 0, np.max(slta), color="red"
+        )
+        ax1.hlines(
+            [profile["half"] for profile in profiles],
+            [profile["start_fwhm"] for profile in profiles],
+            [profile["end_fwhm"] for profile in profiles],
+            color="#32CD32",
+        )
+        ax1.vlines(
+            [profile["argmax"] + r for profile in profiles],
+            0,
+            np.max(slta),
+            color="cyan",
+        )
+        ax1.vlines(
+            [profile["argmax"] - r for profile in profiles],
+            0,
+            np.max(slta),
+            color="cyan",
+        )
+
+        fig.tight_layout()
+        plt.xticks(ticks, datetime_ticks)
+        if title:
+            plt.title(title)
+        plt.show()
+
+    return profiles
 
 
 def _detrend_rolling(data, window, step=1):
