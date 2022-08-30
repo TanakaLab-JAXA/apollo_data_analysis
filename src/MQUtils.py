@@ -231,7 +231,7 @@ def remove_noise(
         data[0].data = d
 
 
-def culc_sta_lta(
+def calc_sta_lta(
     mq,
     channel="SPZ",
     fc=1.0,
@@ -255,6 +255,9 @@ def culc_sta_lta(
         verbose (int): set >0 if visualize
         is_widget (bool): use widget if True
         title (str): figure title
+
+    Returns:
+        result (ndarray): sta/lta
     """
     data = None
     if channel == "LPX":
@@ -288,12 +291,12 @@ def culc_sta_lta(
 
     if verbose > 0:
         fig, ax1 = plt.subplots(figsize=(8 if is_widget else 24, 4))
+        ticks, datetime_ticks = _get_datetime_ticks(data)
 
         color = "red"
         ax1.set_ylabel("STA/LTA", color=color)
         ax1.plot(result, color=color)
         ax1.tick_params(axis="y", labelcolor=color)
-        ax1.set_ylim(-5, 100)
 
         color = "black"
         ax2 = ax1.twinx()
@@ -301,7 +304,7 @@ def culc_sta_lta(
         ax2.plot(d[tl + ts + lag :], color=color, alpha=0.3)
 
         fig.tight_layout()
-        plt.xticks([])
+        plt.xticks(ticks, datetime_ticks)
         if title:
             plt.title(title)
         plt.show()
@@ -309,12 +312,13 @@ def culc_sta_lta(
     return result
 
 
-def culc_peak_run_length(
-    slta,
-    threshold,
+def calc_peak_run_length(
+    mq,
+    channel="SPZ",
+    slta=None,
+    threshold=5,
     run_length_th=None,
     verbose=0,
-    signal=None,
     is_widget=False,
     title=None,
 ):
@@ -322,6 +326,8 @@ def culc_peak_run_length(
     calculate run length
 
     Args:
+        mq (MQData): Moonquake Data
+        channel (str): {'LPX', 'LPY', 'LPZ', 'SPZ'}
         slta (ndarray): sta/lta
         threshold (float): threshold of sta/lta
         run_length_th (float): threshold of run length
@@ -329,8 +335,16 @@ def culc_peak_run_length(
         signal (ndarray): plot signal
         is_widget (bool): use widget if True
         title (str): figure title
+
+    Returns:
+        run_length (ndarray): run length list of peaks
+        start_args (ndarray): start args of peaks
+        end_args (ndarray): end args of peaks
     """
-    comp_sec, lengths = _culc_run_length(slta >= threshold)
+    if slta is None:
+        slta = calc_sta_lta(mq=mq, channel=channel)
+
+    comp_sec, lengths = _calc_run_length(slta >= threshold)
     run_length = lengths[comp_sec]
 
     start_args = np.array(
@@ -366,10 +380,28 @@ def culc_peak_run_length(
         ax1.plot(np.repeat(threshold, len(slta)), color="#32CD32")
         ax1.tick_params(axis="y", labelcolor="blue")
 
-        if signal is not None:
+        data = None
+        if channel == "LPX":
+            data = mq.lpx
+        elif channel == "LPY":
+            data = mq.lpy
+        elif channel == "LPZ":
+            data = mq.lpz
+        elif channel == "SPZ":
+            data = mq.spz
+
+        if data:
             ax2 = ax1.twinx()
             ax2.set_ylabel("nm/s", color="black")
-            ax2.plot(pd.Series(signal[-len(slta) :]).abs(), color="black", alpha=0.2)
+            ax2.plot(
+                pd.Series(data[0].data[-len(slta) :]).abs(), color="black", alpha=0.2
+            )
+            ticks, datetime_ticks = _get_datetime_ticks(data)
+            plt.xticks(ticks, datetime_ticks)
+
+        if verbose > 1:
+            ax1.vlines(start_args, 0, np.max(slta), color="magenta")
+            ax1.vlines(end_args, 0, np.max(slta), color="cyan")
 
         fig.tight_layout()
         if title:
@@ -377,6 +409,37 @@ def culc_peak_run_length(
         plt.show()
 
     return run_length, start_args, end_args
+
+
+def calc_fwhm(
+    mq,
+    channel="SPZ",
+    starts=[],
+    ends=[],
+    verbose=0,
+    is_widget=False,
+    title=None,
+):
+    """
+    calculate full width half maximum
+    """
+    if len(starts) != len(ends):
+        return
+
+    data = None
+    if channel == "LPX":
+        data = mq.lpx
+    elif channel == "LPY":
+        data = mq.lpy
+    elif channel == "LPZ":
+        data = mq.lpz
+    elif channel == "SPZ":
+        data = mq.spz
+
+    if data is None:
+        return
+
+    # TODO
 
 
 def _detrend_rolling(data, window, step=1):
@@ -398,7 +461,7 @@ def _plotting(fig, data, add_subplot_args, title, color="blue"):
     return ax
 
 
-def _culc_run_length(sequence):
+def _calc_run_length(sequence):
     diff_seq = np.diff(sequence)
 
     newdata = np.append(True, diff_seq != 0)
