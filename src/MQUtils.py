@@ -398,7 +398,7 @@ def calc_peak_run_length(
         if data:
             # plot signal
             ax2 = ax1.twinx()
-            ax2.set_ylabel("nm/s", color="black")
+            ax2.set_ylabel("m/s", color="black")
             ax2.plot(
                 pd.Series(data[0].data[-len(slta) :]).abs(), color="black", alpha=0.2
             )
@@ -510,7 +510,7 @@ def calc_fwhm(
 
         # plot signal
         ax2 = ax1.twinx()
-        ax2.set_ylabel("nm/s", color="black")
+        ax2.set_ylabel("m/s", color="black")
         ax2.plot(pd.Series(data[0].data[-len(slta) :]).abs(), color="black", alpha=0.2)
 
         ax1.vlines(
