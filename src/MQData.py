@@ -93,6 +93,37 @@ class MQData:
         self.lpz_du = deepcopy(self.lpz)
         self.spz_du = deepcopy(self.spz)
 
+    def read_seed(self, path, id=[], verbose=0):
+        """
+        read miniSEED files
+
+        Args:
+            path (str): path of the miniSEED file
+            id (list): [Station Number, Channel, Year, Day of the year] (ex: [14, 'SHZ', 1974, 180])
+        """
+        if len(id) != 4:
+            return
+
+        target_file = glob(path + "/**/S{}.XA..{}.{}.{}".format(*id), recursive=True)
+        if not target_file:
+            return
+
+        if verbose > 0:
+            print(target_file[0])
+
+        data = obspy.read(target_file[0])
+        data.merge(method=1, fill_value="interpolate")
+
+        channel = id[1]
+        if channel == "MH1" or channel == "MHE":
+            self.lpx, self.lpx_du = deepcopy(data), deepcopy(data)
+        elif channel == "MH2" or channel == "MHN":
+            self.lpy, self.lpy_du = deepcopy(data), deepcopy(data)
+        elif channel == "MHZ":
+            self.lpz, self.lpz_du = deepcopy(data), deepcopy(data)
+        elif channel == "SHZ":
+            self.spz, self.spz_du = deepcopy(data), deepcopy(data)
+
     def to_sac(self, path):
         """
         output sac files
