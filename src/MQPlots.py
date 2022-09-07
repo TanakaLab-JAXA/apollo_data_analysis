@@ -156,6 +156,8 @@ def plot_spectrogram(mq, channel="ALL", save=False, path="", is_widget=False):
         if data is None:
             continue
 
+        sampling_rate = data[0].stats.sampling_rate
+
         # init figure
         fig = plt.figure(figsize=(8 if is_widget else 24, 12))
         plt.gca().spines["right"].set_visible(False)
@@ -182,10 +184,10 @@ def plot_spectrogram(mq, channel="ALL", save=False, path="", is_widget=False):
         if ch != "SPZ":
             f, t, sxx = signal.spectrogram(
                 data[0].data * 1e9,
-                nfft=int(f_lp * times),
-                nperseg=int(f_lp * times),
-                fs=int(f_lp),
-                noverlap=int(f_lp * times / 2),
+                nfft=int(sampling_rate * times),
+                nperseg=int(sampling_rate * times),
+                fs=int(sampling_rate),
+                noverlap=int(sampling_rate * times / 2),
                 scaling="density",
                 mode="psd",
                 window=("hamming"),
@@ -205,10 +207,10 @@ def plot_spectrogram(mq, channel="ALL", save=False, path="", is_widget=False):
         if ch == "SPZ":
             f, t, sxx = signal.spectrogram(
                 data[0].data * 1e9,
-                nfft=int(f_sp * times),
-                nperseg=int(f_sp * times),
-                fs=int(f_sp),
-                noverlap=int(f_sp * times / 2),
+                nfft=int(sampling_rate * times),
+                nperseg=int(sampling_rate * times),
+                fs=int(sampling_rate),
+                noverlap=int(sampling_rate * times / 2),
                 scaling="density",
                 mode="psd",
                 window=("hamming"),
