@@ -123,7 +123,7 @@ def du2phys(mq, channel="ALL", lower_th=None, upper_th=None):
 
 
 def remove_noise(
-    mq, channel="ALL", method="envelope", times=5, verbose=0, is_widget=False
+    mq, channel="ALL", method="envelope", times=5, is_detrended=False, verbose=0, is_widget=False
 ):
     """
     remove noise
@@ -133,6 +133,7 @@ def remove_noise(
         channel (str): {'ALL', 'LPX', 'LPY', 'LPZ', 'SPZ'}
         method (str): {'envelope', 'ewm'}
         times (int): times of approve the method
+        is_detrended (bool): if input_data is detrended, True
         verbose (int): visualized if >0
         is_widget (bool): use widget if True
     """
@@ -164,13 +165,14 @@ def remove_noise(
             _plotting(fig, d, [n_plots, 1, 1], title, color="black")
 
         # remove extreme noise
-        LOWER_LIMIT, UPPER_LIMIT = 10, 1014
-        d[d < LOWER_LIMIT] = 0
-        d[d > UPPER_LIMIT] = 0
+        LOWER_LIMIT, UPPER_LIMIT = (-500, 500) if is_detrended else (10, 1014)
+        d[d < LOWER_LIMIT] = 1023
+        d[d > UPPER_LIMIT] = 1023
 
         # detrend with window
         window = 1000 if ch == "SPZ" else 100
-        d[d != 0] = _detrend_rolling(d[d != 0], window=window, step=window)
+        d[d != 1023] = _detrend_rolling(d[d != 1023], window=window, step=window)
+        d[d == 1023] = 0
         if verbose >= 1:
             title = "Remove skipping noise + Detrend"
             _plotting(fig, d, [n_plots, 1, 2], title, color="blue")
@@ -475,12 +477,12 @@ def calc_fwhm(
         for i, target in enumerate(slta[peak_argmax - r : peak_argmax][::-1]):
             if target <= half:
                 break
-        start_fwhm = peak_argmax - i
+        fwhm_start = peak_argmax - i
         for i, target in enumerate(slta[peak_argmax : peak_argmax + 1 + r]):
             if target <= half:
                 break
-        end_fwhm = peak_argmax + i
-        fwhm = end_fwhm - start_fwhm + 1
+        fwhm_end = peak_argmax + i
+        fwhm = fwhm_end - fwhm_start + 1
 
         profile = {
             "id": i,
@@ -489,8 +491,8 @@ def calc_fwhm(
             "min": peak_min,
             "half": half,
             "fwhm": fwhm,
-            "start_fwhm": start_fwhm,
-            "end_fwhm": end_fwhm,
+            "fwhm_start": fwhm_start,
+            "fwhm_end": fwhm_end,
         }
         profiles.append(profile)
 
@@ -516,8 +518,8 @@ def calc_fwhm(
         )
         ax1.hlines(
             [profile["half"] for profile in profiles],
-            [profile["start_fwhm"] for profile in profiles],
-            [profile["end_fwhm"] for profile in profiles],
+            [profile["fwhm_start"] for profile in profiles],
+            [profile["fwhm_end"] for profile in profiles],
             color="#32CD32",
         )
         ax1.vlines(
