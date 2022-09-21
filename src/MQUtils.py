@@ -17,6 +17,7 @@ def trim(
     start,
     end,
     channel="ALL",
+    inplace=False,
 ):
     """
     trimming
@@ -26,7 +27,12 @@ def trim(
         start (list[int]): start time ([year, month, day, hour, minute, second, microsecond])
         end (list[int]): end time ([year, month, day, hour, minute, second, microsecond])
         channel (str): {'ALL', 'LPX', 'LPY', 'LPZ', 'SPZ'}
+        inplace (bool): return a clone if False
+
+    Returns:
+        trimmed_mq (MQData): trimmed Moonquake Data
     """
+    trimmed_mq = mq if inplace else deepcopy(mq)
     if channel == "ALL":
         channels = ["LPX", "LPY", "LPZ", "SPZ"]
     else:
@@ -35,13 +41,13 @@ def trim(
     for ch in channels:
         data = None
         if ch == "LPX":
-            data, data_du = mq.lpx, mq.lpx_du
+            data, data_du = trimmed_mq.lpx, trimmed_mq.lpx_du
         elif ch == "LPY":
-            data, data_du = mq.lpy, mq.lpy_du
+            data, data_du = trimmed_mq.lpy, trimmed_mq.lpy_du
         elif ch == "LPZ":
-            data, data_du = mq.lpz, mq.lpz_du
+            data, data_du = trimmed_mq.lpz, trimmed_mq.lpz_du
         elif ch == "SPZ":
-            data, data_du = mq.spz, mq.spz_du
+            data, data_du = trimmed_mq.spz, trimmed_mq.spz_du
 
         if data is None:
             continue
@@ -58,6 +64,8 @@ def trim(
         data_du[0].data = data_du[0].data[index]
 
         data[0].stats.starttime = starttime_after
+
+    return trimmed_mq
 
 
 def du2phys(mq, channel="ALL", lower_th=None, upper_th=None):
@@ -89,37 +97,34 @@ def du2phys(mq, channel="ALL", lower_th=None, upper_th=None):
         if data is None:
             continue
 
+        is_custom_filter = (lower_th is not None) and (upper_th is not None)
+
+        data.detrend(type="linear")  # detrend
+        data.detrend("demean")  # demean
+        data.taper(0.05, type="cosine")
+
         if ch != "SPZ":
-            data.detrend(type="linear")  # detrend
-            data.detrend("demean")  # demean
-            data.taper(0.05, type="cosine")
             data.filter("lowpass", freq=pre_high_freq, zerophase=True)
             data.filter("highpass", freq=pre_low_freq, zerophase=True)
             data.simulate(paz_remove=paz_AP)  # Remove response
-            data.taper(0.05, type="cosine")
-            data.differentiate(method="gradient")
-
-            if (lower_th is None) or (upper_th is None):
-                data.filter("lowpass", freq=post_high_freq, zerophase=True)
-                data.filter("highpass", freq=post_low_freq, zerophase=True)
-
         elif ch == "SPZ":
-            data.detrend(type="linear")  # detrend
-            data.detrend("demean")  # demean
-            data.taper(0.05, type="cosine")
             data.filter("lowpass", freq=pre_high_freq_sp, zerophase=True)
             data.filter("highpass", freq=pre_low_freq_sp, zerophase=True)
             data.simulate(paz_remove=paz_SP)  # Remove response
-            data.taper(0.05, type="cosine")
-            data.differentiate(method="gradient")
 
-            if (lower_th is None) or (upper_th is None):
-                data.filter("lowpass", freq=post_high_freq_sp, zerophase=True)
-                data.filter("highpass", freq=post_low_freq_sp, zerophase=True)
+        data.taper(0.05, type="cosine")
+        data.differentiate(method="gradient")
 
-        if (lower_th is not None) and (upper_th is not None):
+        if is_custom_filter:
             data.filter("lowpass", freq=upper_th, zerophase=True)
             data.filter("highpass", freq=lower_th, zerophase=True)
+        else:
+            if ch != "SPZ":
+                data.filter("lowpass", freq=post_high_freq, zerophase=True)
+                data.filter("highpass", freq=post_low_freq, zerophase=True)
+            elif ch == "SPZ":
+                data.filter("lowpass", freq=post_high_freq_sp, zerophase=True)
+                data.filter("highpass", freq=post_low_freq_sp, zerophase=True)
 
 
 def remove_noise(
@@ -136,6 +141,9 @@ def remove_noise(
         is_detrended (bool): if input_data is detrended, True
         verbose (int): visualized if >0
         is_widget (bool): use widget if True
+
+    Returns:
+        threshold (ndarray): threshold for noise removal
     """
     if channel == "ALL":
         channels = ["LPX", "LPY", "LPZ", "SPZ"]
@@ -232,6 +240,8 @@ def remove_noise(
             plt.show()
 
         data[0].data = d
+
+    return threshold
 
 
 def calc_sta_lta(
