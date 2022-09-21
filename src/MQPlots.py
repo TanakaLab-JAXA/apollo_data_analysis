@@ -236,7 +236,7 @@ def plot_spectrogram(mq, channel="ALL", save=False, path="", is_widget=False):
         ax.set_ylabel("Frequency (Hz)")
         ax.set_ylim(0.5, 16)
         ax.set_yscale("log")
-        ax.set_yticks([1, 4, 8])
+        ax.set_yticks([1, 2, 4, 8])
         ax.get_yaxis().set_major_formatter(ScalarFormatter())
         ax.get_yaxis().set_tick_params(which="minor", size=0)
 
