@@ -128,7 +128,13 @@ def du2phys(mq, channel="ALL", lower_th=None, upper_th=None):
 
 
 def remove_noise(
-    mq, channel="ALL", method="envelope", times=5, is_detrended=False, verbose=0, is_widget=False
+    mq,
+    channel="ALL",
+    method="envelope",
+    times=5,
+    is_detrended=False,
+    verbose=0,
+    is_widget=False,
 ):
     """
     remove noise
