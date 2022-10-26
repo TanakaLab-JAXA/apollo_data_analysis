@@ -1,4 +1,25 @@
+.ipynb_checkpoints/
+
 dataset/
 
+unused/
+
+*/plots/
+
+*.pyc
+
+*.png
+
+*.pickle
+
+*.pkl
+
+*.zip
+
+*.sac
 
 .DS_Store
+
+venv/
+
+*.csv
