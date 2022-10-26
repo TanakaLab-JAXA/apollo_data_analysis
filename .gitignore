@@ -19,3 +19,7 @@ unused/
 *.sac
 
 .DS_Store
+
+venv/
+
+*.csv
